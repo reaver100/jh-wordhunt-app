@@ -1,6 +1,6 @@
 /* 영어 단어 사냥 - 서비스 워커
    앱 화면은 바로 캐시, AI 모델/라이브러리는 한 번 받은 뒤 캐시에서 씀 */
-const SHELL = 'wh-shell-v1';
+const SHELL = 'wh-shell-v2';
 const BIG = 'wh-model-v1';
 const FILES = [
   './', './index.html', './style.css', './app.js', './dict.js',

@@ -331,7 +331,34 @@ if (words.length) $('empty').style.display = 'none';
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && 'speechSynthesis' in window) speechSynthesis.cancel();
 });
+/* ---------- 자동 업데이트 ----------
+   고친 내용이 폰에 바로 반영되도록: 켤 때마다 새 버전을 확인하고,
+   새 버전이 준비되면 한 번만 새로고침한다. */
+const BUILD = '2026-11-16 12:15';
+const verEl = document.getElementById('ver');
+if (verEl) verEl.textContent = 'v ' + BUILD;
+
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  let reloaded = false;
+  const wasControlled = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // 첫 설치 때는 새로고침하지 않고, 새 버전으로 바뀔 때만 한 번 새로고침
+    if (!wasControlled || reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.update().catch(() => {});
+      setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
+    }).catch(() => {});
+  });
+  // 앱을 다시 열 때도 새 버전 확인
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      navigator.serviceWorker.getRegistration()
+        .then(reg => reg && reg.update().catch(() => {})).catch(() => {});
+    }
+  });
 }
 })();
