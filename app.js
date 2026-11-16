@@ -156,20 +156,48 @@ async function loadModel() {
   return model;
 }
 
+function note(msg, bad) {
+  const n = $('coverNote');
+  n.textContent = msg || '';
+  n.style.color = bad ? 'var(--no)' : 'var(--dim)';
+}
+const timeout = (p, ms, msg) => Promise.race([
+  p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))
+]);
+
+// 어떤 오류도 조용히 묻히지 않게
+window.addEventListener('error', e => note('오류: ' + (e.message || e.type), true));
+window.addEventListener('unhandledrejection', e =>
+  note('오류: ' + ((e.reason && (e.reason.message || e.reason.name)) || e.reason), true));
+
 $('startBtn').onclick = async () => {
-  const note = $('coverNote'); note.textContent = '';
   try {
     $('startBtn').disabled = true;
-    await openCam();
+    note('카메라 여는 중…');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      note('이 브라우저에서는 카메라를 쓸 수 없어요. 크롬이나 사파리에서 열어 주세요.', true);
+      return;
+    }
+    await timeout(openCam(), 20000, '카메라가 응답하지 않아요. 앱을 껐다 다시 켜 보세요.');
     $('cover').hidden = true;
-    await loadModel();
-    toast('준비 끝! 물건을 찍어 보세요 📸');
+    note('');
+    toast('AI 준비 중… 처음 한 번은 10~20초 걸려요');
+    try {
+      await timeout(loadModel(), 90000, 'AI 내려받기가 너무 오래 걸려요');
+      toast('준비 끝! 물건을 찍어 보세요 📸');
+    } catch (me) {
+      $('loading').hidden = true;
+      toast('AI를 못 받았어요. 인터넷을 확인하고 셔터를 다시 눌러 주세요.');
+    }
   } catch (e) {
-    const msg = String(e && e.name || e);
-    note.textContent = /NotAllowed|Permission/i.test(msg)
-      ? '카메라 권한을 허용해 주세요. (주소창 왼쪽 자물쇠 → 카메라 허용)'
-      : /NotFound/i.test(msg) ? '카메라를 찾을 수 없어요.'
-      : '카메라를 열지 못했어요: ' + msg;
+    const msg = String((e && (e.name || e.message)) || e);
+    $('loading').hidden = true;
+    $('cover').hidden = false;
+    note(/NotAllowed|Permission/i.test(msg)
+      ? '카메라 권한이 막혀 있어요. 주소창 왼쪽 자물쇠(또는 ⓘ) → 권한 → 카메라 허용 후 다시 눌러 주세요.'
+      : /NotFound|Overconstrained/i.test(msg) ? '카메라를 찾을 수 없어요.'
+      : /NotReadable|TrackStart/i.test(msg) ? '다른 앱이 카메라를 쓰고 있어요. 그 앱을 끄고 다시 눌러 주세요.'
+      : '카메라를 열지 못했어요: ' + msg, true);
   } finally { $('startBtn').disabled = false; }
 };
 
@@ -334,7 +362,7 @@ document.addEventListener('visibilitychange', () => {
 /* ---------- 자동 업데이트 ----------
    고친 내용이 폰에 바로 반영되도록: 켤 때마다 새 버전을 확인하고,
    새 버전이 준비되면 한 번만 새로고침한다. */
-const BUILD = '2026-11-16 12:25';
+const BUILD = '2026-11-16 12:40';
 const verEl = document.getElementById('ver');
 if (verEl) verEl.textContent = 'v ' + BUILD;
 
