@@ -132,8 +132,11 @@ button{cursor:pointer; font-family:inherit}
 #sheetKo{font-size:19px; color:var(--hi); text-align:center; margin-top:4px; font-weight:700}
 #sheetSub{font-size:12px; color:var(--dim); text-align:center; margin-top:8px; min-height:16px}
 #alts{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:10px}
-.alt{font-size:12px; padding:6px 10px; border-radius:999px; background:var(--card);
-  border:1px solid var(--line); color:var(--dim); font-weight:600}
+.alt{font-size:13px; padding:9px 14px; border-radius:999px; background:var(--card);
+  border:1px solid var(--line); color:var(--txt); font-weight:700; font-family:inherit}
+.alt.on{background:var(--hi); color:#2b2200; border-color:var(--hi)}
+.alt:active{transform:scale(.96)}
+#altHint{font-size:11px; color:var(--dim); text-align:center; margin-top:14px}
 .sheet-btns{display:flex; gap:10px; margin-top:16px}
 .sheet-btns .ghost{flex:0 0 38%}
 .sheet-btns .big{flex:1}
