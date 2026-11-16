@@ -1,10 +1,10 @@
 /* 영어 단어 사냥 - 서비스 워커
    앱 화면은 바로 캐시, AI 모델/라이브러리는 한 번 받은 뒤 캐시에서 씀 */
-const SHELL = 'wh-shell-v2';
+const SHELL = 'wh-shell-v3';
 const BIG = 'wh-model-v1';
 const FILES = [
-  './', './index.html', './style.css', './app.js', './dict.js',
-  './manifest.webmanifest', './icon-192.png', './icon-512.png'
+  './', './index.html', './style.css?v=3', './app.js?v=3', './dict.js?v=3',
+  './manifest.webmanifest?v=3', './icon-192.png', './icon-512.png'
 ];
 
 self.addEventListener('install', e => {
@@ -51,7 +51,7 @@ self.addEventListener('fetch', e => {
   // 앱 파일: 네트워크 먼저, 안 되면 캐시
   if (new URL(url).origin === self.location.origin) {
     e.respondWith(
-      fetch(req)
+      fetch(new Request(req.url, { cache: 'no-store' }))
         .then(res => {
           if (res && res.ok) caches.open(SHELL).then(c => c.put(req, res.clone()));
           return res;

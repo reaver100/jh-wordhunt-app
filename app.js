@@ -334,7 +334,7 @@ document.addEventListener('visibilitychange', () => {
 /* ---------- 자동 업데이트 ----------
    고친 내용이 폰에 바로 반영되도록: 켤 때마다 새 버전을 확인하고,
    새 버전이 준비되면 한 번만 새로고침한다. */
-const BUILD = '2026-11-16 12:15';
+const BUILD = '2026-11-16 12:25';
 const verEl = document.getElementById('ver');
 if (verEl) verEl.textContent = 'v ' + BUILD;
 
