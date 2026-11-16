@@ -269,7 +269,7 @@ async function detectMain() {
   const src = document.createElement('canvas');
   if (!grab(416, 1.5, src)) return null;          // 네모보다 조금 넓게 보고 찾는다
   let dets = [];
-  try { dets = await coco.detect(src, 8, 0.25); } catch (e) { return null; }
+  try { dets = await coco.detect(src, 8, 0.3); } catch (e) { return null; }
   if (!dets.length) return null;
 
   const C = 208;                                   // 화면 한가운데
@@ -282,7 +282,7 @@ async function detectMain() {
     const sc = d.score * (1 - 0.55 * Math.min(1, dist)) * (0.45 + 0.55 * area);
     if (!best || sc > best.sc) best = { sc, det: d, src };
   }
-  return best && best.sc > 0.22 ? best : null;
+  return best && best.sc > 0.25 ? best : null;
 }
 
 // 찾아낸 상자만 잘라내기 (조금 여유를 둔 정사각형)
@@ -333,32 +333,35 @@ async function classifyBest() {
 
 /* 최종 인식: 물체 탐지 → 그 상자만 자세히 보기 → 부족하면 화면 전체 분류 */
 async function recognize() {
-  const out = [], seen = new Set();
-  const push = (className, prob) => {
+  const cand = new Map();                       // 단어 -> 후보
+  const add = (className, weight) => {
     const w = lookupWord(className);
-    if (!w.en || seen.has(w.en)) return;
-    seen.add(w.en);
-    out.push({ className, probability: prob, word: w });
+    if (!w.en) return;
+    const prev = cand.get(w.en);
+    if (!prev || weight > prev.probability) {
+      cand.set(w.en, { className, probability: weight, word: w });
+    }
   };
 
   const best = await detectMain();
   if (best) {
-    push(best.det.class, Math.min(0.99, best.det.score));
+    // 탐지는 '화면 속 주인공'을 집어낸 것이라 조금 더 믿는다
+    add(best.det.class, Math.min(0.99, best.det.score * 1.25));
     if (model) {
       try {
         const res = await model.classify(cropBox(best.src, best.det.bbox, 224), 5);
         for (const r of res) {
-          const first = r.className.split(',')[0].trim().toLowerCase();
-          if (SCENE.has(first)) continue;
-          push(r.className, r.probability * 0.9);
+          if (SCENE.has(r.className.split(',')[0].trim().toLowerCase())) continue;
+          add(r.className, r.probability * 0.95);
         }
       } catch (e) {}
     }
   }
-  if (out.length < 3) {
-    for (const c of await classifyBest()) push(c.className, c.probability * 0.8);
+  // 탐지가 약하거나 후보가 적으면 화면 전체 분류로 보완
+  if (!best || best.det.score < 0.5 || cand.size < 3) {
+    for (const c of await classifyBest()) add(c.className, c.probability * 0.8);
   }
-  return out.slice(0, 4);
+  return [...cand.values()].sort((a, b) => b.probability - a.probability).slice(0, 4);
 }
 
 $('shutter').onclick = async () => {
@@ -510,7 +513,7 @@ document.addEventListener('visibilitychange', () => {
 /* ---------- 자동 업데이트 ----------
    고친 내용이 폰에 바로 반영되도록: 켤 때마다 새 버전을 확인하고,
    새 버전이 준비되면 한 번만 새로고침한다. */
-const BUILD = '2026-11-16 13:20';
+const BUILD = '2026-11-16 13:45';
 const verEl = document.getElementById('ver');
 if (verEl) verEl.textContent = 'v ' + BUILD;
 
