@@ -1,10 +1,8 @@
-/* 영어 단어 사냥 - 서비스 워커
-   앱 화면은 바로 캐시, AI 모델/라이브러리는 한 번 받은 뒤 캐시에서 씀 */
-const SHELL = 'wh-shell-v7';
-const BIG = 'wh-model-v1';
+/* 가족 미니게임 - 서비스 워커 (전부 오프라인에서 동작) */
+const SHELL = 'fg-shell-v1';
 const FILES = [
-  './', './index.html', './style.css?v=7', './app.js?v=7', './dict.js?v=7',
-  './manifest.webmanifest?v=7', './icon-192.png', './icon-512.png'
+  './', './index.html', './style.css?v=1', './app.js?v=1',
+  './manifest.webmanifest?v=1', './icon-192.png', './icon-512.png', './icon-maskable.png'
 ];
 
 self.addEventListener('install', e => {
@@ -13,50 +11,24 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys()
-      .then(ks => Promise.all(ks.filter(k => k !== SHELL && k !== BIG && k.indexOf('wh-') === 0).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
+    caches.keys().then(ks => Promise.all(
+      // 이 앱이 쓰던 옛 캐시(단어사냥의 AI 모델 포함)만 정리한다
+      ks.filter(k => (k.indexOf('fg-') === 0 || k.indexOf('wh-') === 0) && k !== SHELL)
+        .map(k => caches.delete(k))
+    )).then(() => self.clients.claim())
   );
 });
-
-const isBig = url =>
-  url.includes('cdn.jsdelivr.net') ||
-  url.includes('storage.googleapis.com') ||
-  url.includes('tfhub.dev') ||
-  url.includes('kaggle.com');
 
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  const url = req.url;
-
-  // AI 모델/라이브러리: 캐시 우선 (한 번 받으면 데이터 안 씀)
-  if (isBig(url)) {
-    e.respondWith(
-      caches.open(BIG).then(async c => {
-        const hit = await c.match(req);
-        if (hit) return hit;
-        try {
-          const res = await fetch(req);
-          if (res && (res.ok || res.type === 'opaque')) c.put(req, res.clone());
-          return res;
-        } catch (err) {
-          return hit || Response.error();
-        }
+  if (new URL(req.url).origin !== self.location.origin) return;
+  e.respondWith(
+    fetch(new Request(req.url, { cache: 'no-store' }))
+      .then(res => {
+        if (res && res.ok) caches.open(SHELL).then(c => c.put(req, res.clone()));
+        return res;
       })
-    );
-    return;
-  }
-
-  // 앱 파일: 네트워크 먼저, 안 되면 캐시
-  if (new URL(url).origin === self.location.origin) {
-    e.respondWith(
-      fetch(new Request(req.url, { cache: 'no-store' }))
-        .then(res => {
-          if (res && res.ok) caches.open(SHELL).then(c => c.put(req, res.clone()));
-          return res;
-        })
-        .catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
-    );
-  }
+      .catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
+  );
 });
