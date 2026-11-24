@@ -4,7 +4,7 @@
 (() => {
 'use strict';
 
-const BUILD = '2026-11-24 23:05';
+const BUILD = '2026-11-25 08:10';
 const $ = id => document.getElementById(id);
 const PKEY = 'fg.players.v1';
 const GKEY = 'fg.games.v1';
@@ -19,6 +19,10 @@ const GAMES = [
   { id:'tap',    emoji:'👆', tag:'순발력', name:'10초 연타',   desc:'10초 동안 최대한 많이 두드리기',       better:'high', unit:'회' },
   { id:'mole',   emoji:'🐹', tag:'순발력', name:'두더지 잡기', desc:'튀어나온 두더지만 탭! 폭탄은 감점',    better:'high', unit:'점' },
   { id:'balloon',emoji:'🎈', tag:'순발력', name:'풍선 터뜨리기', desc:'떠오르는 풍선을 30초 동안 최대한 많이', better:'high', unit:'개' },
+  { id:'go',     emoji:'🚦', tag:'순발력', name:'신호등 참기', desc:'초록만 탭! 빨강을 누르면 감점',        better:'high', unit:'점' },
+  { id:'rps',    emoji:'✌️', tag:'순발력', name:'이기는 손 고르기', desc:'상대 손을 이기는 손을 빠르게! 30초', better:'high', unit:'개' },
+  { id:'ring',   emoji:'🎯', tag:'순발력', name:'과녁 맞히기', desc:'줄어드는 원이 과녁과 겹칠 때 탭',      better:'high', unit:'점' },
+  { id:'catch',  emoji:'🧺', tag:'순발력', name:'바구니로 받기', desc:'과일은 받고 폭탄은 피하기, 30초',    better:'high', unit:'점' },
   { id:'stroop', emoji:'🎨', tag:'순발력', name:'색깔 함정',   desc:'글자 말고 글자의 색을 고르기! 20초',   better:'high', unit:'점' },
   { id:'timer',  emoji:'⏱️', tag:'감각',   name:'정확히 10초', desc:'시계 없이 10초를 세어 멈추기',         better:'low',  unit:'초 차이' },
   { id:'memory', emoji:'🧠', tag:'기억',   name:'불빛 기억',   desc:'불빛이 켜진 순서를 그대로 따라 누르기', better:'high', unit:'단계' },
@@ -113,6 +117,8 @@ function fmt(gid, v) {
   if (gid === 'mole') return v + '점';
   if (gid === 'balloon') return v + '개';
   if (gid === 'sum') return v + '번';
+  if (gid === 'go' || gid === 'ring' || gid === 'catch') return v + '점';
+  if (gid === 'rps') return v + '개';
   if (gid === 'math') return v + '개';
   if (gid === 'color') return v + '단계';
   return String(v);
@@ -742,6 +748,10 @@ function runGame(id) {
   if (id === 'sum') return gameSum();
   if (id === 'mole') return gameMole();
   if (id === 'balloon') return gameBalloon();
+  if (id === 'go') return gameGo();
+  if (id === 'rps') return gameRps();
+  if (id === 'ring') return gameRing();
+  if (id === 'catch') return gameCatch();
   return Promise.resolve(0);
 }
 
@@ -1396,6 +1406,216 @@ function gameBalloon() {
       }
     }, 100);
     spawn();
+  });
+}
+
+/* 15. 신호등 참기 — 초록만 탭! 빨강을 누르면 감점 (30초) */
+function gameGo() {
+  return new Promise(resolve => {
+    const arena = document.createElement('div');
+    arena.className = 'arena goarena';
+    arena.innerHTML = '<div class="light" id="lt"></div><div class="gohint">초록만 탭! 빨강은 참기</div>';
+    $('board').appendChild(arena);
+
+    let score = 0, state = null, done = false;
+    const t0 = performance.now();
+    const lt = () => $('lt');
+
+    const flash = () => {
+      if (done) return;
+      const red = RND() < .32;
+      state = red ? 'red' : 'green';
+      lt().className = 'light on ' + state;
+      lt().textContent = red ? '✋' : '';
+      beep(red ? 320 : 760, .06);
+      const hide = setTimeout(() => {
+        if (state === 'green') { /* 놓쳐도 감점 없음 */ }
+        state = null;
+        lt().className = 'light';
+        lt().textContent = '';
+      }, 620);
+      cleanup.push(() => clearTimeout(hide));
+      const next = setTimeout(flash, 700 + RND() * 900);
+      cleanup.push(() => clearTimeout(next));
+    };
+
+    arena.onclick = () => {
+      if (done) return;
+      if (state === 'green') {
+        score++; beep(1040, .06); buzz(12);
+        state = null; lt().className = 'light'; lt().textContent = '';
+      } else if (state === 'red') {
+        score = Math.max(0, score - 2); beep(180, .2, 'square'); buzz(90);
+        state = null; lt().className = 'light'; lt().textContent = '';
+      } else {
+        buzz(15);
+      }
+      $('playInfo').textContent = `신호등 · ${score}점`;
+    };
+
+    ticker(() => {
+      const left = Math.max(0, 30 - (performance.now() - t0) / 1000);
+      clockLabel(left);
+      if (left <= 0 && !done) { done = true; beep(440, .25); resolve(score); }
+    }, 100);
+    setTimeout(flash, 700);
+  });
+}
+
+/* 16. 이기는 손 고르기 — 가위바위보, 30초 동안 맞힌 수 */
+function gameRps() {
+  return new Promise(resolve => {
+    const HANDS = [
+      { k:'rock',  e:'✊', n:'바위' },
+      { k:'paper', e:'✋', n:'보' },
+      { k:'sci',   e:'✌️', n:'가위' }
+    ];
+    const beats = { rock:'paper', paper:'sci', sci:'rock' };   // 상대 손 -> 이기는 손
+    const box = document.createElement('div');
+    box.className = 'rps';
+    box.innerHTML = '<div class="rps-t">이기는 손을 고르세요</div>' +
+      '<div class="rps-hand" id="rh">✊</div>' +
+      '<div class="rps-opts">' + HANDS.map(h =>
+        `<button class="rb" data-k="${h.k}">${h.e}<i>${h.n}</i></button>`).join('') + '</div>';
+    $('board').appendChild(box);
+
+    let score = 0, cur = null, done = false;
+    const t0 = performance.now();
+    const next = () => {
+      cur = HANDS[Math.floor(RND() * 3)];
+      $('rh').textContent = cur.e;
+    };
+    box.onclick = e => {
+      const b = e.target.closest('[data-k]');
+      if (!b || done) return;
+      if (b.dataset.k === beats[cur.k]) { score++; beep(1040, .06); }
+      else { score = Math.max(0, score - 1); beep(200, .14, 'square'); buzz(60); }
+      $('playInfo').textContent = `가위바위보 · ${score}개`;
+      next();
+    };
+    ticker(() => {
+      const left = Math.max(0, 30 - (performance.now() - t0) / 1000);
+      clockLabel(left);
+      if (left <= 0 && !done) { done = true; beep(440, .25); resolve(score); }
+    }, 100);
+    next();
+  });
+}
+
+/* 17. 과녁 맞히기 — 줄어드는 원이 노란 테두리와 겹칠 때 탭 (30초 합계) */
+function gameRing() {
+  return new Promise(resolve => {
+    const arena = document.createElement('div');
+    arena.className = 'arena ringarena';
+    arena.innerHTML = '<div class="target"></div><div class="shrink" id="sh"></div>' +
+                      '<div class="gohint">노란 원과 겹칠 때 탭!</div>';
+    $('board').appendChild(arena);
+
+    const TARGET = 110;                 // 노란 원 지름(px)
+    let score = 0, size = 300, dir = -1, done = false, raf = 0;
+    const t0 = performance.now();
+    const el = () => $('sh');
+
+    const loop = () => {
+      if (done) return;
+      size += dir * (3.2 + score * 0.05);
+      if (size < 40) { size = 40; dir = 1; }
+      if (size > 300) { size = 300; dir = -1; }
+      el().style.width = el().style.height = size + 'px';
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    cleanup.push(() => cancelAnimationFrame(raf));
+
+    arena.onclick = () => {
+      if (done) return;
+      const diff = Math.abs(size - TARGET);
+      let got = 0;
+      if (diff < 8) { got = 10; beep(1400, .12); }
+      else if (diff < 20) { got = 5; beep(1040, .08); }
+      else if (diff < 40) { got = 2; beep(760, .06); }
+      else { got = 0; beep(200, .14, 'square'); buzz(50); }
+      score += got;
+      el().classList.add('hit'); setTimeout(() => el().classList.remove('hit'), 120);
+      $('playInfo').textContent = `과녁 · ${score}점`;
+      size = 300; dir = -1;             // 다시 크게 시작
+    };
+    ticker(() => {
+      const left = Math.max(0, 30 - (performance.now() - t0) / 1000);
+      clockLabel(left);
+      if (left <= 0 && !done) { done = true; cancelAnimationFrame(raf); beep(440, .25); resolve(score); }
+    }, 100);
+    window.__ringSize = () => size;     // 자동 점검용
+    cleanup.push(() => { delete window.__ringSize; });
+  });
+}
+
+/* 18. 바구니로 받기 — 과일은 받고 폭탄은 피하기 (30초) */
+function gameCatch() {
+  return new Promise(resolve => {
+    const arena = document.createElement('div');
+    arena.className = 'arena catcharena';
+    arena.innerHTML = '<div class="basket" id="bk">🧺</div><div class="gohint">손가락을 좌우로! 폭탄은 피하기</div>';
+    $('board').appendChild(arena);
+
+    const FRUIT = ['🍎','🍊','🍌','🍇','🍓','🍐'];
+    let score = 0, done = false, raf = 0, bx = .5, items = [], lastSpawn = 0;
+    const t0 = performance.now();
+
+    const aim = px => {
+      const r = arena.getBoundingClientRect();
+      bx = Math.max(.06, Math.min(.94, (px - r.left) / r.width));
+      $('bk').style.left = (bx * 100) + '%';
+    };
+    arena.addEventListener('touchmove', e => { aim(e.touches[0].clientX); }, { passive: true });
+    arena.addEventListener('touchstart', e => { aim(e.touches[0].clientX); }, { passive: true });
+    arena.addEventListener('mousemove', e => aim(e.clientX));
+    window.__catchAim = f => { bx = Math.max(.06, Math.min(.94, f)); $('bk').style.left = (bx * 100) + '%'; };
+    window.__catchItems = () => items.map(i => ({ x: i.x, y: i.y, bomb: i.bomb }));
+    cleanup.push(() => { delete window.__catchAim; delete window.__catchItems; });
+
+    const spawn = () => {
+      const bomb = RND() < .22;
+      const el = document.createElement('div');
+      el.className = 'fall' + (bomb ? ' bomb' : '');
+      el.textContent = bomb ? '💣' : FRUIT[Math.floor(RND() * FRUIT.length)];
+      arena.appendChild(el);
+      items.push({ el, x: .08 + RND() * .84, y: -0.08, v: .0042 + RND() * .0035, bomb });
+    };
+
+    const loop = ts => {
+      if (done) return;
+      if (!lastSpawn || ts - lastSpawn > 620) { spawn(); lastSpawn = ts; }
+      const speed = 1 + (performance.now() - t0) / 30000;     // 갈수록 빨라짐
+      for (const it of items) {
+        it.y += it.v * speed * 16;
+        it.el.style.left = (it.x * 100) + '%';
+        it.el.style.top = (it.y * 100) + '%';
+        if (!it.gone && it.y > .82 && it.y < .96 && Math.abs(it.x - bx) < .1) {
+          it.gone = true;
+          if (it.bomb) { score = Math.max(0, score - 2); beep(180, .2, 'square'); buzz(90); }
+          else { score++; beep(1040, .06); buzz(12); }
+          $('playInfo').textContent = `바구니 · ${score}점`;
+          it.el.remove();
+        } else if (!it.gone && it.y > 1.05) {
+          it.gone = true; it.el.remove();
+        }
+      }
+      items = items.filter(i => !i.gone);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    cleanup.push(() => cancelAnimationFrame(raf));
+
+    ticker(() => {
+      const left = Math.max(0, 30 - (performance.now() - t0) / 1000);
+      clockLabel(left);
+      if (left <= 0 && !done) {
+        done = true; cancelAnimationFrame(raf);
+        items.forEach(i => i.el.remove());
+        beep(440, .25); resolve(score);
+      }
+    }, 100);
   });
 }
 
