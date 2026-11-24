@@ -256,3 +256,5 @@ button{font-family:inherit; cursor:pointer}
 .basket{position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
   font-size:48px; line-height:1; pointer-events:none}
 .fall{position:absolute; transform:translate(-50%,-50%); font-size:34px; pointer-events:none}
+
+.catcharena .gohint{bottom:auto; top:6px}
