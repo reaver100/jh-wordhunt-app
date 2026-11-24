@@ -135,3 +135,38 @@ button{font-family:inherit; cursor:pointer}
 #myName::placeholder,#roomCode::placeholder{color:#7c6fae}
 #roomCode{text-align:center; letter-spacing:4px; font-weight:800}
 .room{font-size:52px; font-weight:800; color:var(--hi); letter-spacing:10px; margin:2px 0 10px}
+
+/* 빠른 선택 */
+.row-t{display:flex; align-items:center; justify-content:space-between}
+.picks{display:flex; gap:6px}
+.tiny{background:var(--card); border:1px solid var(--line); color:var(--dim);
+  border-radius:999px; padding:5px 10px; font-size:11px; font-weight:700}
+
+/* 숫자 순서 찾기 */
+.grid5{display:grid; grid-template-columns:repeat(5,1fr); gap:6px; width:100%; max-width:360px}
+.sc-cell{aspect-ratio:1/1; border-radius:12px; border:1px solid var(--line); background:var(--card);
+  color:var(--txt); font-size:17px; font-weight:800; padding:0}
+.sc-cell.done{background:var(--go); color:#06290f; border-color:var(--go); opacity:.55}
+.sc-cell.wrong{background:var(--no); color:#3b0410}
+
+/* 짝 맞추기 */
+.grid4c{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; width:100%; max-width:340px}
+.card{aspect-ratio:3/4; border-radius:14px; border:1px solid var(--line);
+  background:linear-gradient(160deg,#4c2f8f,#311d63); color:#cbbcf7; font-size:26px; padding:0}
+.card.up{background:var(--bg2); color:var(--txt)}
+.card.got{background:var(--go); color:#06290f; border-color:var(--go)}
+
+/* 암산 */
+.q{font-size:40px; font-weight:800; margin:6px 0 24px; letter-spacing:1px}
+.ob.num{font-size:22px}
+
+/* 다른 색 찾기 */
+.cgrid{display:grid; gap:7px; width:100%; max-width:330px; aspect-ratio:1/1}
+.ctile{border:0; border-radius:12px; padding:0; width:100%; height:100%}
+
+/* 미로 */
+.maze{display:grid; width:100%; max-width:330px; aspect-ratio:1/1; background:#1b1138;
+  border-radius:12px; padding:3px}
+.mcell{border:2px solid #7c5cff; position:relative; display:grid; place-items:center; font-size:11px}
+.mcell.goal{font-size:14px}
+.mme{position:absolute; inset:0; display:grid; place-items:center; font-size:13px}

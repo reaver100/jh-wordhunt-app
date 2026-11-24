@@ -4,7 +4,7 @@
 (() => {
 'use strict';
 
-const BUILD = '2026-11-24 12:10';
+const BUILD = '2026-11-24 16:10';
 const $ = id => document.getElementById(id);
 const PKEY = 'fg.players.v1';
 const GKEY = 'fg.games.v1';
@@ -19,7 +19,12 @@ const GAMES = [
   { id:'tap',    emoji:'👆', name:'10초 연타',   desc:'10초 동안 최대한 많이 두드리기',       better:'high', unit:'회' },
   { id:'memory', emoji:'🧠', name:'불빛 기억',   desc:'불빛이 켜진 순서를 그대로 따라 누르기', better:'high', unit:'단계' },
   { id:'timer',  emoji:'⏱️', name:'정확히 10초', desc:'시계 없이 10초를 세어 멈추기',         better:'low',  unit:'초 차이' },
-  { id:'stroop', emoji:'🎨', name:'색깔 함정',   desc:'글자 말고 글자의 색을 고르기! 20초',   better:'high', unit:'점' }
+  { id:'stroop', emoji:'🎨', name:'색깔 함정',   desc:'글자 말고 글자의 색을 고르기! 20초',   better:'high', unit:'점' },
+  { id:'schulte',emoji:'🔢', name:'숫자 순서 찾기', desc:'1부터 25까지 순서대로 빠르게 찾기',  better:'low',  unit:'초' },
+  { id:'pairs',  emoji:'🃏', name:'짝 맞추기',   desc:'카드 16장에서 같은 그림 8쌍 찾기',     better:'low',  unit:'초' },
+  { id:'math',   emoji:'➗', name:'암산 폭탄',   desc:'30초 동안 문제 풀기, 갈수록 어려워짐', better:'high', unit:'개' },
+  { id:'color',  emoji:'👁️', name:'다른 색 찾기', desc:'색이 다른 칸 하나 찾기, 점점 어려워짐', better:'high', unit:'단계' },
+  { id:'maze',   emoji:'🌀', name:'미로 탈출',   desc:'손가락으로 밀어서 출구까지!',          better:'low',  unit:'초' }
 ];
 const gameById = id => GAMES.find(g => g.id === id);
 
@@ -99,6 +104,9 @@ function fmt(gid, v) {
   if (gid === 'memory') return v + '단계';
   if (gid === 'timer') return Number(v).toFixed(2) + '초 차이';
   if (gid === 'stroop') return v + '점';
+  if (gid === 'schulte' || gid === 'pairs' || gid === 'maze') return Number(v).toFixed(2) + '초';
+  if (gid === 'math') return v + '개';
+  if (gid === 'color') return v + '단계';
   return String(v);
 }
 
@@ -163,6 +171,15 @@ function drawGames() {
        <span class="mark">✓</span>
      </button>`).join('');
 }
+$('pickAll').onclick = () => { picked = GAMES.map(g => g.id); save(GKEY, picked); drawGames(); };
+$('pickNone').onclick = () => { picked = []; save(GKEY, picked); drawGames(); };
+$('pickRand').onclick = () => {
+  const pool = GAMES.map(g => g.id);
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  picked = pool.slice(0, 4);
+  save(GKEY, picked); drawGames();
+};
+
 $('games').onclick = e => {
   const b = e.target.closest('[data-g]');
   if (!b) return;
@@ -654,6 +671,11 @@ function runGame(id) {
   if (id === 'memory') return gameMemory();
   if (id === 'timer') return gameTimer();
   if (id === 'stroop') return gameStroop();
+  if (id === 'schulte') return gameSchulte();
+  if (id === 'pairs') return gamePairs();
+  if (id === 'math') return gameMath();
+  if (id === 'color') return gameColor();
+  if (id === 'maze') return gameMaze();
   return Promise.resolve(0);
 }
 
@@ -828,6 +850,267 @@ function gameStroop() {
       if (left <= 0 && !done) { done = true; beep(440, .25); resolve(score); }
     }, 100);
     round();
+  });
+}
+
+/* ---------- 새 게임 공용 ---------- */
+function shuffled(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(RND() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function clockLabel(sec) {
+  $('playWho').textContent = `${MODE === 'net' ? NET.me : (T ? T.names[T.pi] : '')} · ${sec.toFixed(0)}초`;
+}
+
+/* 6. 숫자 순서 찾기 — 1부터 25까지, 걸린 시간(초) */
+function gameSchulte() {
+  return new Promise(resolve => {
+    const N = 25;
+    const nums = shuffled(Array.from({ length: N }, (_, i) => i + 1));
+    const wrap = document.createElement('div');
+    wrap.className = 'grid5';
+    wrap.innerHTML = nums.map(n => `<button class="sc-cell" data-n="${n}">${n}</button>`).join('');
+    $('board').appendChild(wrap);
+
+    let next = 1, penalty = 0;
+    const t0 = performance.now();
+    $('playInfo').textContent = '다음: 1';
+
+    wrap.onclick = e => {
+      const b = e.target.closest('[data-n]');
+      if (!b || b.disabled) return;
+      if (+b.dataset.n === next) {
+        b.disabled = true; b.classList.add('done');
+        beep(640 + next * 14, .05);
+        next++;
+        $('playInfo').textContent = next > N ? '끝!' : '다음: ' + next;
+        if (next > N) {
+          beep(1200, .22);
+          resolve(Math.round(((performance.now() - t0) / 1000 + penalty) * 100) / 100);
+        }
+      } else {
+        penalty += 0.5;                       // 잘못 누르면 0.5초 벌점
+        buzz(60); beep(200, .12, 'square');
+        b.classList.add('wrong');
+        setTimeout(() => b.classList.remove('wrong'), 220);
+      }
+    };
+  });
+}
+
+/* 7. 짝 맞추기 — 16장에서 8쌍, 걸린 시간(초) */
+function gamePairs() {
+  return new Promise(resolve => {
+    const FACES = ['🍎','🐶','⚽','🚗','🌙','🍕','🐸','🎈','🦄','🍓','🚀','🐱'];
+    const faces = shuffled(FACES).slice(0, 8);
+    const deck = shuffled([...faces, ...faces]);
+    const wrap = document.createElement('div');
+    wrap.className = 'grid4c';
+    wrap.innerHTML = deck.map((f, i) =>
+      `<button class="card" data-i="${i}" data-f="${f}"><span>?</span></button>`).join('');
+    $('board').appendChild(wrap);
+
+    const t0 = performance.now();
+    let open = [], found = 0, lock = false;
+    $('playInfo').textContent = '0 / 8 쌍';
+
+    wrap.onclick = e => {
+      const b = e.target.closest('[data-i]');
+      if (!b || lock || b.classList.contains('up') || b.classList.contains('got')) return;
+      b.classList.add('up'); b.firstElementChild.textContent = b.dataset.f;
+      beep(620, .05);
+      open.push(b);
+      if (open.length < 2) return;
+      const [x, y] = open;
+      if (x.dataset.f === y.dataset.f) {
+        x.classList.add('got'); y.classList.add('got');
+        open = []; found++;
+        beep(1040, .1);
+        $('playInfo').textContent = `${found} / 8 쌍`;
+        if (found === 8) {
+          beep(1200, .22);
+          resolve(Math.round((performance.now() - t0) / 10) / 100);
+        }
+      } else {
+        lock = true;
+        setTimeout(() => {
+          [x, y].forEach(c => { c.classList.remove('up'); c.firstElementChild.textContent = '?'; });
+          open = []; lock = false;
+        }, 650);
+      }
+    };
+  });
+}
+
+/* 8. 암산 폭탄 — 30초 동안 맞힌 개수 */
+function gameMath() {
+  return new Promise(resolve => {
+    const box = document.createElement('div');
+    box.className = 'stroop';
+    box.innerHTML = '<div class="q" id="mq">준비</div><div class="opts" id="mo"></div>';
+    $('board').appendChild(box);
+
+    let score = 0, answer = 0, done = false;
+    const t0 = performance.now();
+    const ri = (a, b) => a + Math.floor(RND() * (b - a + 1));
+
+    const make = () => {
+      const lv = Math.min(4, Math.floor(score / 4));
+      let a, b, op, ans;
+      if (lv === 0) { a = ri(2, 9);   b = ri(2, 9);  op = '+'; ans = a + b; }
+      else if (lv === 1) { a = ri(10, 30); b = ri(2, 19); op = '+'; ans = a + b; }
+      else if (lv === 2) { a = ri(12, 40); b = ri(2, 11); op = '−'; ans = a - b; }
+      else if (lv === 3) { a = ri(2, 9);   b = ri(2, 9);  op = '×'; ans = a * b; }
+      else { a = ri(3, 12); b = ri(3, 9); op = '×'; ans = a * b; }
+      answer = ans;
+      const opts = new Set([ans]);
+      let guard = 0;
+      while (opts.size < 4 && guard++ < 50) {
+        const d = ri(1, Math.max(3, Math.round(Math.abs(ans) * .25)));
+        const v = RND() < .5 ? ans + d : ans - d;
+        if (v >= 0) opts.add(v);
+      }
+      $('mq').textContent = `${a} ${op} ${b} = ?`;
+      $('mo').innerHTML = shuffled([...opts]).map(v =>
+        `<button class="ob num" data-v="${v}">${v}</button>`).join('');
+    };
+
+    box.onclick = e => {
+      const b = e.target.closest('[data-v]');
+      if (!b || done) return;
+      if (+b.dataset.v === answer) { score++; beep(1040, .06); }
+      else { score = Math.max(0, score - 1); beep(200, .14, 'square'); buzz(60); }
+      $('playInfo').textContent = `암산 폭탄 · ${score}개`;
+      make();
+    };
+    ticker(() => {
+      const left = Math.max(0, 30 - (performance.now() - t0) / 1000);
+      clockLabel(left);
+      if (left <= 0 && !done) { done = true; beep(440, .25); resolve(score); }
+    }, 100);
+    make();
+  });
+}
+
+/* 9. 다른 색 찾기 — 30초 동안 올라간 단계 */
+function gameColor() {
+  return new Promise(resolve => {
+    const wrap = document.createElement('div');
+    wrap.className = 'cgrid';
+    $('board').appendChild(wrap);
+    let level = 1, done = false;
+    const t0 = performance.now();
+
+    const build = () => {
+      const n = Math.min(6, 2 + Math.floor(level / 3));      // 2x2 에서 6x6 까지
+      const total = n * n;
+      const hue = Math.floor(RND() * 360);
+      const diff = Math.max(4, 40 - level * 2.2);            // 갈수록 비슷한 색
+      const base = `hsl(${hue} 70% 52%)`;
+      const odd = `hsl(${hue} 70% ${Math.min(92, 52 + diff)}%)`;
+      const pick = Math.floor(RND() * total);
+      wrap.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+      wrap.innerHTML = Array.from({ length: total }, (_, i) =>
+        `<button class="ctile" data-ok="${i === pick ? 1 : 0}" style="background:${i === pick ? odd : base}"></button>`).join('');
+      $('playInfo').textContent = `다른 색 찾기 · ${level}단계`;
+    };
+    wrap.onclick = e => {
+      const b = e.target.closest('[data-ok]');
+      if (!b || done) return;
+      if (b.dataset.ok === '1') { level++; beep(880 + level * 18, .06); build(); }
+      else { beep(200, .14, 'square'); buzz(60); }
+    };
+    ticker(() => {
+      const left = Math.max(0, 30 - (performance.now() - t0) / 1000);
+      clockLabel(left);
+      if (left <= 0 && !done) { done = true; beep(440, .25); resolve(level - 1); }
+    }, 100);
+    build();
+  });
+}
+
+/* 10. 미로 탈출 — 출구까지 걸린 시간(초) */
+function gameMaze() {
+  return new Promise(resolve => {
+    const N = 9;
+    const idx = (x, y) => y * N + x;
+    const cells = Array.from({ length: N * N }, () => ({ n:true, e:true, s:true, w:true, v:false }));
+    const stack = [[0, 0]];
+    cells[0].v = true;
+    while (stack.length) {                                   // 벽 뚫기(DFS) — 반드시 길이 있다
+      const [x, y] = stack[stack.length - 1];
+      const opts = [];
+      if (y > 0     && !cells[idx(x, y - 1)].v) opts.push(['n', x, y - 1]);
+      if (x < N - 1 && !cells[idx(x + 1, y)].v) opts.push(['e', x + 1, y]);
+      if (y < N - 1 && !cells[idx(x, y + 1)].v) opts.push(['s', x, y + 1]);
+      if (x > 0     && !cells[idx(x - 1, y)].v) opts.push(['w', x - 1, y]);
+      if (!opts.length) { stack.pop(); continue; }
+      const [dir, nx, ny] = opts[Math.floor(RND() * opts.length)];
+      cells[idx(x, y)][dir] = false;
+      cells[idx(nx, ny)][{ n:'s', s:'n', e:'w', w:'e' }[dir]] = false;
+      cells[idx(nx, ny)].v = true;
+      stack.push([nx, ny]);
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'maze';
+    wrap.style.gridTemplateColumns = `repeat(${N}, 1fr)`;
+    wrap.innerHTML = cells.map(c => {
+      const st = [c.n ? '' : 'border-top-color:transparent',
+                  c.e ? '' : 'border-right-color:transparent',
+                  c.s ? '' : 'border-bottom-color:transparent',
+                  c.w ? '' : 'border-left-color:transparent'].filter(Boolean).join(';');
+      return `<div class="mcell" style="${st}"></div>`;
+    }).join('');
+    $('board').appendChild(wrap);
+
+    wrap.children[N * N - 1].classList.add('goal');
+    wrap.children[N * N - 1].textContent = '🚩';
+    const me = document.createElement('div');
+    me.className = 'mme'; me.textContent = '🙂';
+    wrap.children[0].appendChild(me);
+
+    let px = 0, py = 0, done = false;
+    const t0 = performance.now();
+    $('playInfo').textContent = '손가락으로 밀기';
+
+    const move = dir => {
+      if (done) return;
+      const c = cells[idx(px, py)];
+      if (dir === 'n' && !c.n) py--;
+      else if (dir === 's' && !c.s) py++;
+      else if (dir === 'e' && !c.e) px++;
+      else if (dir === 'w' && !c.w) px--;
+      else { buzz(20); return; }
+      wrap.children[idx(px, py)].appendChild(me);
+      beep(520, .03);
+      if (px === N - 1 && py === N - 1) {
+        done = true; beep(1200, .25);
+        resolve(Math.round((performance.now() - t0) / 10) / 100);
+      }
+    };
+
+    let sx = 0, sy = 0;
+    const down = e => { const p = e.touches ? e.touches[0] : e; sx = p.clientX; sy = p.clientY; };
+    const up = e => {
+      const p = e.changedTouches ? e.changedTouches[0] : e;
+      const dx = p.clientX - sx, dy = p.clientY - sy;
+      if (Math.abs(dx) < 16 && Math.abs(dy) < 16) return;
+      move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'e' : 'w') : (dy > 0 ? 's' : 'n'));
+    };
+    wrap.addEventListener('touchstart', down, { passive: true });
+    wrap.addEventListener('touchend', up, { passive: true });
+    wrap.addEventListener('mousedown', down);
+    wrap.addEventListener('mouseup', up);
+    const key = e => {
+      const m = { ArrowUp:'n', ArrowDown:'s', ArrowLeft:'w', ArrowRight:'e' }[e.key];
+      if (m) { e.preventDefault(); move(m); }
+    };
+    window.addEventListener('keydown', key);
+    cleanup.push(() => window.removeEventListener('keydown', key));
+    window.__mazeMove = move;            // 자동 점검용
+    cleanup.push(() => { delete window.__mazeMove; });
   });
 }
 
