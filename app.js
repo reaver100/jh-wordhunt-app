@@ -4,7 +4,7 @@
 (() => {
 'use strict';
 
-const BUILD = '2026-11-24 16:10';
+const BUILD = '2026-11-24 17:00';
 const $ = id => document.getElementById(id);
 const PKEY = 'fg.players.v1';
 const GKEY = 'fg.games.v1';
@@ -15,16 +15,20 @@ const NS = 'fgame2';                       // PeerJS 아이디 앞머리
 
 /* ---------- 게임 정의 ---------- */
 const GAMES = [
-  { id:'react',  emoji:'⚡', name:'반응 속도',   desc:'초록으로 바뀌면 바로 탭! 5번 평균',    better:'low',  unit:'ms' },
-  { id:'tap',    emoji:'👆', name:'10초 연타',   desc:'10초 동안 최대한 많이 두드리기',       better:'high', unit:'회' },
-  { id:'memory', emoji:'🧠', name:'불빛 기억',   desc:'불빛이 켜진 순서를 그대로 따라 누르기', better:'high', unit:'단계' },
-  { id:'timer',  emoji:'⏱️', name:'정확히 10초', desc:'시계 없이 10초를 세어 멈추기',         better:'low',  unit:'초 차이' },
-  { id:'stroop', emoji:'🎨', name:'색깔 함정',   desc:'글자 말고 글자의 색을 고르기! 20초',   better:'high', unit:'점' },
-  { id:'schulte',emoji:'🔢', name:'숫자 순서 찾기', desc:'1부터 25까지 순서대로 빠르게 찾기',  better:'low',  unit:'초' },
-  { id:'pairs',  emoji:'🃏', name:'짝 맞추기',   desc:'카드 16장에서 같은 그림 8쌍 찾기',     better:'low',  unit:'초' },
-  { id:'math',   emoji:'➗', name:'암산 폭탄',   desc:'30초 동안 문제 풀기, 갈수록 어려워짐', better:'high', unit:'개' },
-  { id:'color',  emoji:'👁️', name:'다른 색 찾기', desc:'색이 다른 칸 하나 찾기, 점점 어려워짐', better:'high', unit:'단계' },
-  { id:'maze',   emoji:'🌀', name:'미로 탈출',   desc:'손가락으로 밀어서 출구까지!',          better:'low',  unit:'초' }
+  { id:'react',  emoji:'⚡', tag:'순발력', name:'반응 속도',   desc:'초록으로 바뀌면 바로 탭! 5번 평균',    better:'low',  unit:'ms' },
+  { id:'tap',    emoji:'👆', tag:'순발력', name:'10초 연타',   desc:'10초 동안 최대한 많이 두드리기',       better:'high', unit:'회' },
+  { id:'mole',   emoji:'🐹', tag:'순발력', name:'두더지 잡기', desc:'튀어나온 두더지만 탭! 폭탄은 감점',    better:'high', unit:'점' },
+  { id:'balloon',emoji:'🎈', tag:'순발력', name:'풍선 터뜨리기', desc:'떠오르는 풍선을 30초 동안 최대한 많이', better:'high', unit:'개' },
+  { id:'stroop', emoji:'🎨', tag:'순발력', name:'색깔 함정',   desc:'글자 말고 글자의 색을 고르기! 20초',   better:'high', unit:'점' },
+  { id:'timer',  emoji:'⏱️', tag:'감각',   name:'정확히 10초', desc:'시계 없이 10초를 세어 멈추기',         better:'low',  unit:'초 차이' },
+  { id:'memory', emoji:'🧠', tag:'기억',   name:'불빛 기억',   desc:'불빛이 켜진 순서를 그대로 따라 누르기', better:'high', unit:'단계' },
+  { id:'pairs',  emoji:'🃏', tag:'기억',   name:'짝 맞추기',   desc:'카드 16장에서 같은 그림 8쌍 찾기',     better:'low',  unit:'초' },
+  { id:'schulte',emoji:'🔢', tag:'집중',   name:'숫자 순서 찾기', desc:'1부터 25까지 순서대로 빠르게 찾기',  better:'low',  unit:'초' },
+  { id:'color',  emoji:'👁️', tag:'집중',   name:'다른 색 찾기', desc:'색이 다른 칸 하나 찾기, 점점 어려워짐', better:'high', unit:'단계' },
+  { id:'math',   emoji:'➗', tag:'머리',   name:'암산 폭탄',   desc:'30초 동안 문제 풀기, 갈수록 어려워짐', better:'high', unit:'개' },
+  { id:'sum',    emoji:'🧮', tag:'퍼즐',   name:'목표 합 만들기', desc:'숫자를 골라 목표 숫자를 만들기, 30초', better:'high', unit:'번' },
+  { id:'slide',  emoji:'🧩', tag:'퍼즐',   name:'조각 맞추기', desc:'3x3 조각을 밀어서 1~8 순서대로',       better:'low',  unit:'초' },
+  { id:'maze',   emoji:'🌀', tag:'퍼즐',   name:'미로 탈출',   desc:'손가락으로 밀어서 출구까지!',          better:'low',  unit:'초' }
 ];
 const gameById = id => GAMES.find(g => g.id === id);
 
@@ -105,6 +109,10 @@ function fmt(gid, v) {
   if (gid === 'timer') return Number(v).toFixed(2) + '초 차이';
   if (gid === 'stroop') return v + '점';
   if (gid === 'schulte' || gid === 'pairs' || gid === 'maze') return Number(v).toFixed(2) + '초';
+  if (gid === 'slide') return Number(v) >= 90 ? '미완성' : Number(v).toFixed(2) + '초';
+  if (gid === 'mole') return v + '점';
+  if (gid === 'balloon') return v + '개';
+  if (gid === 'sum') return v + '번';
   if (gid === 'math') return v + '개';
   if (gid === 'color') return v + '단계';
   return String(v);
@@ -167,7 +175,7 @@ function drawGames() {
   $('games').innerHTML = GAMES.map(g =>
     `<button class="g ${picked.includes(g.id) ? 'on' : ''}" data-g="${g.id}">
        <span class="e">${g.emoji}</span>
-       <span><span class="n">${g.name}</span><span class="d">${g.desc}</span></span>
+       <span><span class="n">${g.name}<i class="tag">${g.tag}</i></span><span class="d">${g.desc}</span></span>
        <span class="mark">✓</span>
      </button>`).join('');
 }
@@ -676,6 +684,10 @@ function runGame(id) {
   if (id === 'math') return gameMath();
   if (id === 'color') return gameColor();
   if (id === 'maze') return gameMaze();
+  if (id === 'slide') return gameSlide();
+  if (id === 'sum') return gameSum();
+  if (id === 'mole') return gameMole();
+  if (id === 'balloon') return gameBalloon();
   return Promise.resolve(0);
 }
 
@@ -1111,6 +1123,225 @@ function gameMaze() {
     cleanup.push(() => window.removeEventListener('keydown', key));
     window.__mazeMove = move;            // 자동 점검용
     cleanup.push(() => { delete window.__mazeMove; });
+  });
+}
+
+/* 11. 조각 맞추기 — 3x3 밀기 퍼즐, 걸린 시간(초). 90초 안에 못 맞추면 벌점 */
+function gameSlide() {
+  return new Promise(resolve => {
+    const N = 3, BLANK = 8, LIMIT = 90;
+    let tiles = Array.from({ length: 9 }, (_, i) => i);   // 8 = 빈칸
+    let blank = 8;
+    const idx = (x, y) => y * N + x;
+    const neigh = i => {
+      const x = i % N, y = (i / N) | 0, out = [];
+      if (y > 0) out.push(idx(x, y - 1));
+      if (y < N - 1) out.push(idx(x, y + 1));
+      if (x > 0) out.push(idx(x - 1, y));
+      if (x < N - 1) out.push(idx(x + 1, y));
+      return out;
+    };
+    for (let k = 0; k < 120; k++) {                        // 합법 이동으로 섞어야 풀 수 있다
+      const opts = neigh(blank);
+      const pick = opts[Math.floor(RND() * opts.length)];
+      tiles[blank] = tiles[pick]; tiles[pick] = BLANK; blank = pick;
+    }
+    const solved = () => tiles.every((v, i) => v === i);
+    if (solved()) { const o = neigh(blank)[0]; tiles[blank] = tiles[o]; tiles[o] = BLANK; blank = o; }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'slide';
+    $('board').appendChild(wrap);
+    const draw = () => {
+      wrap.innerHTML = tiles.map((v, i) =>
+        v === BLANK ? '<div class="stile blank"></div>'
+                    : `<button class="stile ${v === i ? 'ok' : ''}" data-i="${i}">${v + 1}</button>`).join('');
+    };
+    draw();
+
+    let done = false;
+    const t0 = performance.now();
+    const finish = v => { if (done) return; done = true; resolve(Math.round(v * 100) / 100); };
+
+    wrap.onclick = e => {
+      const b = e.target.closest('[data-i]');
+      if (!b || done) return;
+      const i = +b.dataset.i;
+      if (!neigh(blank).includes(i)) { buzz(20); return; }
+      tiles[blank] = tiles[i]; tiles[i] = BLANK; blank = i;
+      beep(560, .04); draw();
+      if (solved()) {
+        beep(1200, .25);
+        finish((performance.now() - t0) / 1000);
+      }
+    };
+    ticker(() => {
+      const left = Math.max(0, LIMIT - (performance.now() - t0) / 1000);
+      clockLabel(left);
+      $('playInfo').textContent = `제자리 ${tiles.filter((v, i) => v === i && v !== BLANK).length} / 8`;
+      if (left <= 0 && !done) {
+        const wrong = tiles.filter((v, i) => v !== i && v !== BLANK).length;
+        beep(440, .25);
+        finish(LIMIT + wrong * 5);                        // 못 맞추면 틀린 칸만큼 벌점
+      }
+    }, 200);
+  });
+}
+
+/* 12. 목표 합 만들기 — 30초 동안 성공 횟수 */
+function gameSum() {
+  return new Promise(resolve => {
+    const box = document.createElement('div');
+    box.className = 'sumbox';
+    box.innerHTML = '<div class="sum-t">목표 <b id="goal">0</b></div>' +
+                    '<div class="sum-now">지금 <b id="now">0</b></div>' +
+                    '<div class="sgrid" id="sg"></div>';
+    $('board').appendChild(box);
+
+    let score = 0, goal = 0, sum = 0, done = false;
+    const t0 = performance.now();
+    const ri = (a, b) => a + Math.floor(RND() * (b - a + 1));
+
+    const build = () => {
+      sum = 0;
+      const nums = Array.from({ length: 9 }, () => ri(1, 9));
+      // 반드시 만들 수 있는 목표로 (아무 숫자 2~3개의 합)
+      const picks = shuffled([0,1,2,3,4,5,6,7,8]).slice(0, ri(2, 3));
+      goal = picks.reduce((a, i) => a + nums[i], 0);
+      $('goal').textContent = goal;
+      $('now').textContent = '0';
+      $('sg').innerHTML = nums.map((n, i) => `<button class="snum" data-i="${i}" data-v="${n}">${n}</button>`).join('');
+    };
+    box.onclick = e => {
+      const b = e.target.closest('[data-v]');
+      if (!b || done || b.classList.contains('used')) return;
+      b.classList.add('used');
+      sum += +b.dataset.v;
+      $('now').textContent = sum;
+      if (sum === goal) {
+        score++; beep(1040, .12);
+        $('playInfo').textContent = `목표 합 · ${score}번 성공`;
+        build();
+      } else if (sum > goal) {
+        beep(200, .16, 'square'); buzz(60);
+        sum = 0; $('now').textContent = '0';
+        [...$('sg').children].forEach(c => c.classList.remove('used'));
+      } else {
+        beep(760, .05);
+      }
+    };
+    ticker(() => {
+      const left = Math.max(0, 30 - (performance.now() - t0) / 1000);
+      clockLabel(left);
+      if (left <= 0 && !done) { done = true; beep(440, .25); resolve(score); }
+    }, 100);
+    build();
+  });
+}
+
+/* 13. 두더지 잡기 — 30초 동안 점수 (폭탄은 감점) */
+function gameMole() {
+  return new Promise(resolve => {
+    const wrap = document.createElement('div');
+    wrap.className = 'holes';
+    wrap.innerHTML = Array.from({ length: 9 }, (_, i) =>
+      `<button class="hole" data-i="${i}"><span></span></button>`).join('');
+    $('board').appendChild(wrap);
+
+    let score = 0, done = false;
+    const t0 = performance.now();
+    const cells = [...wrap.children];
+    const live = new Map();                               // 칸 -> 'mole' | 'bomb'
+
+    const popOne = () => {
+      if (done) return;
+      const free = cells.map((c, i) => i).filter(i => !live.has(i));
+      if (!free.length) return;
+      const i = free[Math.floor(RND() * free.length)];
+      const kind = RND() < .22 ? 'bomb' : 'mole';
+      const el = cells[i];
+      el.classList.add('up', kind);
+      el.firstElementChild.textContent = kind === 'bomb' ? '💣' : '🐹';
+      live.set(i, kind);
+      const span = 600 + RND() * 700;
+      const tm = setTimeout(() => {
+        el.classList.remove('up', 'mole', 'bomb');
+        el.firstElementChild.textContent = '';
+        live.delete(i);
+      }, span);
+      cleanup.push(() => clearTimeout(tm));
+    };
+
+    wrap.onclick = e => {
+      const b = e.target.closest('[data-i]');
+      if (!b || done) return;
+      const i = +b.dataset.i;
+      const kind = live.get(i);
+      if (!kind) { buzz(15); return; }
+      if (kind === 'mole') { score++; beep(1040, .06); }
+      else { score = Math.max(0, score - 2); beep(180, .2, 'square'); buzz(90); }
+      b.classList.add('hit');
+      setTimeout(() => b.classList.remove('hit'), 120);
+      b.classList.remove('up', 'mole', 'bomb');
+      b.firstElementChild.textContent = '';
+      live.delete(i);
+      $('playInfo').textContent = `두더지 · ${score}점`;
+    };
+
+    ticker(popOne, 520);
+    ticker(() => {
+      const left = Math.max(0, 30 - (performance.now() - t0) / 1000);
+      clockLabel(left);
+      if (left <= 0 && !done) { done = true; beep(440, .25); resolve(score); }
+    }, 100);
+    popOne();
+  });
+}
+
+/* 14. 풍선 터뜨리기 — 30초 동안 터뜨린 개수 */
+function gameBalloon() {
+  return new Promise(resolve => {
+    const arena = document.createElement('div');
+    arena.className = 'arena';
+    $('board').appendChild(arena);
+
+    const COLORS = ['#f43f5e','#38bdf8','#4ade80','#facc15','#c084fc','#fb923c'];
+    let score = 0, done = false;
+    const t0 = performance.now();
+
+    const spawn = () => {
+      if (done) return;
+      const b = document.createElement('button');
+      b.className = 'balloon';
+      b.textContent = '🎈';
+      b.style.left = (6 + RND() * 76) + '%';
+      b.style.color = COLORS[Math.floor(RND() * COLORS.length)];
+      const dur = 2.6 + RND() * 1.8;
+      b.style.animationDuration = dur + 's';
+      b.style.fontSize = (34 + RND() * 18) + 'px';
+      arena.appendChild(b);
+      b.addEventListener('animationend', () => b.remove());
+      b.onclick = () => {
+        if (done || b.classList.contains('pop')) return;
+        score++; beep(900 + RND() * 300, .05); buzz(12);
+        b.classList.add('pop');
+        b.textContent = '💥';
+        setTimeout(() => b.remove(), 160);
+        $('playInfo').textContent = `풍선 · ${score}개`;
+      };
+    };
+
+    ticker(spawn, 480);
+    ticker(() => {
+      const left = Math.max(0, 30 - (performance.now() - t0) / 1000);
+      clockLabel(left);
+      if (left <= 0 && !done) {
+        done = true; beep(440, .25);
+        arena.innerHTML = '';
+        resolve(score);
+      }
+    }, 100);
+    spawn();
   });
 }
 
