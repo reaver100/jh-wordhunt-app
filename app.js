@@ -2,7 +2,7 @@
 (() => {
 'use strict';
 
-const BUILD = '2026-11-24 10:40';
+const BUILD = '2026-11-24 11:05';
 const $ = id => document.getElementById(id);
 const PKEY = 'fg.players.v1';
 const GKEY = 'fg.games.v1';
@@ -335,7 +335,7 @@ function gameReact() {
 
     function done() {
       const avg = times.reduce((a, b) => a + b, 0) / times.length;
-      resolve(avg);
+      resolve(Math.round(avg));          // 보이는 값 그대로 기록해야 같은 기록이 공동 순위가 된다
     }
     timer(wait, 600);
   });
@@ -446,7 +446,7 @@ function gameTimer() {
       }
       const sec = (performance.now() - t0) / 1000;
       beep(880, .12);
-      resolve(Math.abs(10 - sec));
+      resolve(Math.round(Math.abs(10 - sec) * 100) / 100);
     };
   });
 }
