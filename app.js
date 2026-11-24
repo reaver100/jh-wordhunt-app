@@ -4,7 +4,7 @@
 (() => {
 'use strict';
 
-const BUILD = '2026-11-24 17:00';
+const BUILD = '2026-11-24 17:25';
 const $ = id => document.getElementById(id);
 const PKEY = 'fg.players.v1';
 const GKEY = 'fg.games.v1';
