@@ -1,8 +1,8 @@
 /* 가족 미니게임 - 서비스 워커 (전부 오프라인에서 동작) */
-const SHELL = 'fg-shell-v2';
+const SHELL = 'fg-shell-v3';
 const FILES = [
-  './', './index.html', './style.css?v=2', './app.js?v=2',
-  './manifest.webmanifest?v=2', './icon-192.png', './icon-512.png', './icon-maskable.png'
+  './', './index.html', './style.css?v=3', './app.js?v=3',
+  './manifest.webmanifest?v=3', './icon-192.png', './icon-512.png', './icon-maskable.png'
 ];
 
 self.addEventListener('install', e => {
