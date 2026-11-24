@@ -210,3 +210,18 @@ button{font-family:inherit; cursor:pointer}
   animation:rise linear forwards; line-height:1}
 .balloon.pop{animation:none}
 @keyframes rise{ to{ transform:translateY(-105vh) } }
+
+/* 설치 안내 */
+.hd-btns{display:flex; gap:6px}
+.chip.hot{background:var(--hi); color:#2b2200; border-color:var(--hi)}
+.ins{text-align:left; margin-top:6px}
+.ins-box{background:var(--card); border:1px solid var(--line); border-radius:16px;
+  padding:14px 16px; margin-bottom:10px}
+.ins-h{font-size:12px; font-weight:800; color:var(--hi); letter-spacing:.3px; margin-bottom:8px}
+.ins-box ol{margin:0; padding-left:20px}
+.ins-box li{font-size:13.5px; line-height:1.9; color:var(--txt)}
+.ins-box b{color:var(--hi)}
+.ins-note{font-size:11px; color:var(--dim); line-height:1.6; margin-top:4px}
+.urlrow{display:flex; gap:8px; margin-top:8px}
+#appUrl{flex:1; min-width:0; background:var(--bg2); border:1px solid var(--line); color:var(--txt);
+  border-radius:12px; padding:12px 14px; font-size:12.5px; font-family:inherit}

@@ -4,7 +4,7 @@
 (() => {
 'use strict';
 
-const BUILD = '2026-11-24 17:25';
+const BUILD = '2026-11-24 23:05';
 const $ = id => document.getElementById(id);
 const PKEY = 'fg.players.v1';
 const GKEY = 'fg.games.v1';
@@ -326,6 +326,60 @@ $('hofBtn').onclick = () => {
   show('hof');
 };
 $('hofClose').onclick = () => show('home');
+
+/* ---------- 설치 안내 ---------- */
+let deferredPrompt = null;
+const standalone = () =>
+  window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;                       // 크롬이 설치를 지원하면 버튼으로 바로 띄운다
+  $('insNow').hidden = false;
+  $('installBtn').classList.add('hot');
+});
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  $('insNow').hidden = true;
+  $('installBtn').hidden = true;
+});
+
+function drawInstall() {
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  $('appUrl').value = location.origin + location.pathname;
+  $('copyNote').textContent = '';
+  $('insAndroid').hidden = ios;
+  $('insIos').hidden = !ios;
+  if (standalone()) {
+    $('insState').textContent = '이미 앱으로 설치되어 있어요 🎉 홈 화면 아이콘으로 실행 중입니다.';
+    $('insSteps').hidden = true;
+    $('insNow').hidden = true;
+  } else {
+    $('insState').innerHTML = '홈 화면에 추가하면 주소를 칠 필요 없이 <b>앱처럼</b> 바로 열립니다.<br>설치해도 인터넷이 없을 때 그대로 돌아가요.';
+    $('insSteps').hidden = false;
+    $('insNow').hidden = !deferredPrompt;
+  }
+}
+$('installBtn').onclick = () => { drawInstall(); show('install'); };
+$('insClose').onclick = () => show('home');
+$('insNow').onclick = async () => {
+  if (!deferredPrompt) return;
+  const p = deferredPrompt;
+  deferredPrompt = null;
+  $('insNow').hidden = true;
+  try { p.prompt(); await p.userChoice; } catch (e) {}
+};
+$('copyUrl').onclick = async () => {
+  const url = $('appUrl').value;
+  try {
+    await navigator.clipboard.writeText(url);
+    $('copyNote').textContent = '주소를 복사했어요';
+  } catch (e) {
+    $('appUrl').select(); $('appUrl').setSelectionRange(0, 99);
+    try { document.execCommand('copy'); $('copyNote').textContent = '주소를 복사했어요'; }
+    catch (e2) { $('copyNote').textContent = '길게 눌러 복사해 주세요'; }
+  }
+};
 
 /* ================================================================
    각자 폰으로 (실시간) — 무전기와 같은 연결 설정
@@ -1349,6 +1403,7 @@ function gameBalloon() {
 drawPlayers(); drawGames();
 $('myName').value = load(NKEY, '');
 $('ver').textContent = 'v ' + BUILD;
+if (standalone()) $('installBtn').hidden = true;      // 이미 앱이면 버튼을 숨긴다
 document.addEventListener('visibilitychange', () => { if (document.hidden) keepAwake(false); });
 window.addEventListener('beforeunload', () => { try { netLeave(); } catch (e) {} });
 

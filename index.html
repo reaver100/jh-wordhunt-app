@@ -8,10 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="미니게임">
-<link rel="manifest" href="manifest.webmanifest?v=7">
+<link rel="manifest" href="manifest.webmanifest?v=8">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 
@@ -19,7 +19,10 @@
 <section id="home" class="screen on">
   <header class="hd">
     <h1>🎮 가족 미니게임</h1>
-    <button id="hofBtn" class="chip">🏆 기록</button>
+    <span class="hd-btns">
+      <button id="installBtn" class="chip">📲 설치</button>
+      <button id="hofBtn" class="chip">🏆 기록</button>
+    </span>
   </header>
 
   <div class="block">
@@ -164,8 +167,48 @@
   </div>
 </section>
 
+<!-- ============ 설치 안내 ============ -->
+<section id="install" class="screen">
+  <div class="mid wide">
+    <div class="t-game">📲</div>
+    <div class="t-name">폰에 앱으로 설치하기</div>
+    <div id="insState" class="t-desc"></div>
+
+    <button id="insNow" class="big" hidden>지금 홈 화면에 추가</button>
+
+    <div id="insSteps" class="ins">
+      <div class="ins-box" id="insAndroid">
+        <div class="ins-h">📱 안드로이드 (크롬)</div>
+        <ol>
+          <li>이 주소를 <b>크롬</b>에서 엽니다</li>
+          <li>브라우저 <b>메뉴</b>를 엽니다 (주소창 옆 ⋮)</li>
+          <li><b>앱 설치</b> 또는 <b>홈 화면에 추가</b>를 누릅니다</li>
+        </ol>
+      </div>
+      <div class="ins-box" id="insIos">
+        <div class="ins-h">🍎 아이폰 (사파리)</div>
+        <ol>
+          <li>이 주소를 <b>사파리</b>에서 엽니다</li>
+          <li>아래쪽 <b>공유 버튼</b>을 누릅니다 (네모에 화살표)</li>
+          <li>목록에서 <b>홈 화면에 추가</b>를 누릅니다</li>
+        </ol>
+      </div>
+      <div class="ins-note">메뉴 이름과 위치는 브라우저 버전에 따라 조금씩 다를 수 있어요.</div>
+    </div>
+
+    <div class="ins-h" style="margin-top:20px">가족에게 보낼 주소</div>
+    <div class="urlrow">
+      <input id="appUrl" type="text" readonly>
+      <button id="copyUrl" class="mini">복사</button>
+    </div>
+    <div id="copyNote" class="note"></div>
+
+    <button id="insClose" class="ghost" style="margin-top:18px">닫기</button>
+  </div>
+</section>
+
 <div id="confetti" hidden></div>
-<script src="peerjs.min.js?v=7"></script>
-<script src="app.js?v=7"></script>
+<script src="peerjs.min.js?v=8"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>
