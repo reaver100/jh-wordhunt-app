@@ -4,7 +4,7 @@
 (() => {
 'use strict';
 
-const BUILD = '2026-11-25 08:10';
+const BUILD = '2026-11-25 08:40';
 const $ = id => document.getElementById(id);
 const PKEY = 'fg.players.v1';
 const GKEY = 'fg.games.v1';
@@ -1512,20 +1512,17 @@ function gameRing() {
     $('board').appendChild(arena);
 
     const TARGET = 110;                 // 노란 원 지름(px)
-    let score = 0, size = 300, dir = -1, done = false, raf = 0;
+    let score = 0, size = 300, dir = -1, done = false;
     const t0 = performance.now();
     const el = () => $('sh');
 
-    const loop = () => {
+    ticker(() => {                       // 타이머로 그린다 (어디서나 확실히 동작)
       if (done) return;
-      size += dir * (3.2 + score * 0.05);
+      size += dir * (6 + score * 0.08);
       if (size < 40) { size = 40; dir = 1; }
       if (size > 300) { size = 300; dir = -1; }
       el().style.width = el().style.height = size + 'px';
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    cleanup.push(() => cancelAnimationFrame(raf));
+    }, 33);
 
     arena.onclick = () => {
       if (done) return;
@@ -1543,7 +1540,7 @@ function gameRing() {
     ticker(() => {
       const left = Math.max(0, 30 - (performance.now() - t0) / 1000);
       clockLabel(left);
-      if (left <= 0 && !done) { done = true; cancelAnimationFrame(raf); beep(440, .25); resolve(score); }
+      if (left <= 0 && !done) { done = true; beep(440, .25); resolve(score); }
     }, 100);
     window.__ringSize = () => size;     // 자동 점검용
     cleanup.push(() => { delete window.__ringSize; });
@@ -1559,7 +1556,7 @@ function gameCatch() {
     $('board').appendChild(arena);
 
     const FRUIT = ['🍎','🍊','🍌','🍇','🍓','🍐'];
-    let score = 0, done = false, raf = 0, bx = .5, items = [], lastSpawn = 0;
+    let score = 0, done = false, bx = .5, items = [], lastSpawn = 0;
     const t0 = performance.now();
 
     const aim = px => {
@@ -1580,15 +1577,16 @@ function gameCatch() {
       el.className = 'fall' + (bomb ? ' bomb' : '');
       el.textContent = bomb ? '💣' : FRUIT[Math.floor(RND() * FRUIT.length)];
       arena.appendChild(el);
-      items.push({ el, x: .08 + RND() * .84, y: -0.08, v: .0042 + RND() * .0035, bomb });
+      items.push({ el, x: .08 + RND() * .84, y: -0.08, v: .0085 + RND() * .006, bomb });
     };
 
-    const loop = ts => {
+    const loop = () => {
       if (done) return;
+      const ts = performance.now();
       if (!lastSpawn || ts - lastSpawn > 620) { spawn(); lastSpawn = ts; }
-      const speed = 1 + (performance.now() - t0) / 30000;     // 갈수록 빨라짐
+      const speed = 1 + (ts - t0) / 30000;                    // 갈수록 빨라짐
       for (const it of items) {
-        it.y += it.v * speed * 16;
+        it.y += it.v * speed;
         it.el.style.left = (it.x * 100) + '%';
         it.el.style.top = (it.y * 100) + '%';
         if (!it.gone && it.y > .82 && it.y < .96 && Math.abs(it.x - bx) < .1) {
@@ -1602,16 +1600,14 @@ function gameCatch() {
         }
       }
       items = items.filter(i => !i.gone);
-      raf = requestAnimationFrame(loop);
     };
-    raf = requestAnimationFrame(loop);
-    cleanup.push(() => cancelAnimationFrame(raf));
+    ticker(loop, 33);
 
     ticker(() => {
       const left = Math.max(0, 30 - (performance.now() - t0) / 1000);
       clockLabel(left);
       if (left <= 0 && !done) {
-        done = true; cancelAnimationFrame(raf);
+        done = true;
         items.forEach(i => i.el.remove());
         beep(440, .25); resolve(score);
       }
