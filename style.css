@@ -122,3 +122,16 @@ button{font-family:inherit; cursor:pointer}
   from{transform:translateY(-24px) rotate(0)}
   to{transform:translateY(106vh) rotate(760deg); opacity:.2}
 }
+
+/* 모드 선택 */
+.modes{display:flex; gap:8px; margin-top:14px}
+.mode{flex:1; padding:13px 0; border:1px solid var(--line); background:var(--bg2);
+  color:var(--dim); font-size:14px; font-weight:800; border-radius:14px}
+.mode.on{background:var(--hi); color:#2b2200; border-color:var(--hi)}
+
+/* 각자 폰으로 */
+#myName,#roomCode{width:100%; background:var(--bg2); border:1px solid var(--line); color:var(--txt);
+  border-radius:12px; padding:12px 14px; font-size:15px; font-family:inherit; min-width:0}
+#myName::placeholder,#roomCode::placeholder{color:#7c6fae}
+#roomCode{text-align:center; letter-spacing:4px; font-weight:800}
+.room{font-size:52px; font-weight:800; color:var(--hi); letter-spacing:10px; margin:2px 0 10px}

@@ -8,10 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="미니게임">
-<link rel="manifest" href="manifest.webmanifest?v=3">
+<link rel="manifest" href="manifest.webmanifest?v=4">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -23,15 +23,40 @@
   </header>
 
   <div class="block">
-    <div class="block-t">누가 할까요?</div>
-    <div id="players"></div>
-    <div class="addrow">
-      <input id="newName" type="text" maxlength="6" placeholder="이름 (6자까지)" autocomplete="off">
-      <button id="addBtn" class="mini">추가</button>
+    <div class="modes">
+      <button class="mode on" data-mode="solo">📱 한 폰으로</button>
+      <button class="mode" data-mode="net">📶 각자 폰으로</button>
     </div>
   </div>
 
-  <div class="block">
+  <!-- 한 폰으로 -->
+  <div id="soloBox">
+    <div class="block">
+      <div class="block-t">누가 할까요?</div>
+      <div id="players"></div>
+      <div class="addrow">
+        <input id="newName" type="text" maxlength="6" placeholder="이름 (6자까지)" autocomplete="off">
+        <button id="addBtn" class="mini">추가</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 각자 폰으로 -->
+  <div id="netBox" hidden>
+    <div class="block">
+      <div class="block-t">내 이름</div>
+      <input id="myName" type="text" maxlength="6" placeholder="이름 (6자까지)" autocomplete="off">
+      <div class="block-t" style="margin-top:18px">방 만들기 / 참가하기</div>
+      <button id="makeRoom" class="big">방 만들기</button>
+      <div class="addrow" style="margin-top:12px">
+        <input id="roomCode" type="tel" inputmode="numeric" maxlength="4" placeholder="방 번호 4자리">
+        <button id="joinRoom" class="mini">참가</button>
+      </div>
+      <div class="note" id="netNote">같은 와이파이에 있으면 가장 잘 붙습니다</div>
+    </div>
+  </div>
+
+  <div class="block" id="gameBox">
     <div class="block-t">무슨 게임으로?</div>
     <div id="games"></div>
   </div>
@@ -40,6 +65,22 @@
     <button id="startBtn" class="big">대결 시작</button>
     <div id="homeNote" class="note"></div>
     <div id="ver"></div>
+  </div>
+</section>
+
+<!-- ============ 대기실 ============ -->
+<section id="lobby" class="screen">
+  <div class="mid wide">
+    <div class="t-desc" style="margin-bottom:4px">방 번호</div>
+    <div id="roomNo" class="room">----</div>
+    <div class="t-desc" id="lobbyHow">다른 식구는 <b>각자 폰으로 → 방 번호 입력 → 참가</b></div>
+    <div class="block-t" style="text-align:left">들어온 사람</div>
+    <div id="lobbyList" class="rank"></div>
+    <div class="btnrow">
+      <button id="lobbyStart" class="big">대결 시작</button>
+      <button id="lobbyLeave" class="ghost">나가기</button>
+    </div>
+    <div id="lobbyNote" class="note"></div>
   </div>
 </section>
 
@@ -74,12 +115,24 @@
   </div>
 </section>
 
+<!-- ============ 다른 사람 기다리기 ============ -->
+<section id="wait" class="screen">
+  <div class="mid wide">
+    <div class="t-game">⏳</div>
+    <div class="t-name">다 끝내기를 기다려요</div>
+    <div id="myResult" class="t-desc"></div>
+    <div id="waitList" class="rank"></div>
+    <div id="waitNote" class="note"></div>
+  </div>
+</section>
+
 <!-- ============ 게임별 순위 ============ -->
 <section id="round" class="screen">
   <div class="mid wide">
     <div id="roundTitle" class="t-name"></div>
     <div id="roundList" class="rank"></div>
     <button id="roundNext" class="big">다음 게임</button>
+    <div id="roundNote" class="note"></div>
   </div>
 </section>
 
@@ -106,6 +159,7 @@
 </section>
 
 <div id="confetti" hidden></div>
-<script src="app.js?v=3"></script>
+<script src="peerjs.min.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
