@@ -302,3 +302,18 @@ button{font-family:inherit; cursor:pointer}
   .row{padding:9px 12px}
   #playTop{padding:8px 14px}
 }
+
+/* ===== 넓은 화면(태블릿 가로)에서 가운데로 모으기 ===== */
+.screen{padding-left:env(safe-area-inset-left, 0px); padding-right:env(safe-area-inset-right, 0px)}
+@media (min-width:600px){
+  #home > *{width:100%; max-width:760px; margin-left:auto; margin-right:auto}
+  .modes{max-width:460px; margin-left:auto; margin-right:auto}
+  .addrow{max-width:520px}
+  #myName{max-width:520px}
+  #makeRoom{max-width:520px}
+  .foot .big{max-width:460px; margin:0 auto; display:block}
+}
+@media (min-width:900px){
+  #home > *{max-width:880px}
+  #games{grid-template-columns:1fr 1fr}
+}

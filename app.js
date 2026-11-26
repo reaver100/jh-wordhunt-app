@@ -4,7 +4,7 @@
 (() => {
 'use strict';
 
-const BUILD = '2026-11-26 15:40';
+const BUILD = '2026-11-26 16:05';
 const $ = id => document.getElementById(id);
 const PKEY = 'fg.players.v1';
 const GKEY = 'fg.games.v1';
@@ -1621,6 +1621,7 @@ $('myName').value = load(NKEY, '');
 $('ver').textContent = 'v ' + BUILD;
 if (standalone()) $('installBtn').hidden = true;      // 이미 앱이면 버튼을 숨긴다
 document.addEventListener('visibilitychange', () => { if (document.hidden) keepAwake(false); });
+try { screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); } catch (e) {}
 window.addEventListener('beforeunload', () => { try { netLeave(); } catch (e) {} });
 
 if ('serviceWorker' in navigator) {
